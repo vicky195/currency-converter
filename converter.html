@@ -1,0 +1,1083 @@
+<!DOCTYPE html>
+<html lang="en" class="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Zero-Forex Card Live Converter | Scapia &amp; Uni INR Calculator</title>
+    <meta name="description" content="Estimate INR charges on zero-forex cards using live mid-market rates. Works offline with your last saved rates.">
+
+    <!-- Progressive Web App -->
+    <link rel="manifest" href="manifest.webmanifest">
+    <meta name="theme-color" content="#4f46e5">
+    <link rel="icon" type="image/svg+xml" href="icons/icon.svg">
+    <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-title" content="ZeroForex">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts: Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Tailwind Configuration -->
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    colors: {
+                        brand: {
+                            50: '#eef2ff',
+                            100: '#e0e7ff',
+                            500: '#6366f1',
+                            600: '#4f46e5',
+                            700: '#4338ca',
+                            900: '#312e81',
+                        },
+                        emerald: {
+                            450: '#10b981',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        /* Custom subtle scrollbar and transitions */
+        body {
+            font-family: 'Inter', sans-serif;
+            transition: background-color 0.25s ease, color 0.25s ease;
+        }
+        /* Hide number input arrows */
+        input[type=number]::-webkit-inner-spin-button, 
+        input[type=number]::-webkit-outer-spin-button { 
+            -webkit-appearance: none; 
+            margin: 0; 
+        }
+        input[type=number] {
+            -moz-appearance: textfield;
+        }
+
+        /* Ensure native hidden state wins over display utilities like .flex. */
+        [hidden] {
+            display: none !important;
+        }
+
+        #amount-value-dialog {
+            position: fixed;
+            inset: 50% auto auto 50%;
+            transform: translate(-50%, -50%);
+            width: min(32rem, calc(100vw - 2rem));
+            max-height: calc(100dvh - 2rem);
+            overflow-y: auto;
+            color: inherit;
+        }
+
+        #amount-value-dialog-content {
+            padding: 2rem;
+        }
+
+        #amount-dialog-title {
+            font-size: 1.125rem;
+            line-height: 1.75rem;
+        }
+
+        #amount-value-dialog-text {
+            font-size: clamp(2.5rem, 9vw, 4rem);
+            line-height: 1.1;
+        }
+
+        @media (max-width: 639px) {
+            #amount-value-dialog-content {
+                padding: 1.5rem;
+            }
+
+            #amount-value-dialog-text {
+                font-size: clamp(2.25rem, 11vw, 3.25rem);
+            }
+        }
+
+        #amount-value-dialog::backdrop {
+            background: rgb(15 23 42 / 0.58);
+            backdrop-filter: blur(3px);
+        }
+
+        @media (max-width: 639px) {
+            header > div {
+                height: 3.5rem;
+            }
+
+            #converter-layout {
+                padding-top: 0.5rem;
+                padding-bottom: 0.5rem;
+            }
+
+            #converter-layout > :not(.hidden) ~ :not(.hidden) {
+                margin-top: 0.5rem;
+            }
+
+            #converter-grid {
+                gap: 0.75rem;
+            }
+
+            #input-panel,
+            #results-panel {
+                padding: 0.85rem;
+            }
+
+            #input-panel > :not([hidden]) ~ :not([hidden]) {
+                margin-top: 0.6rem;
+            }
+
+            #input-panel .space-y-4 > :not([hidden]) ~ :not([hidden]) {
+                margin-top: 0.65rem;
+            }
+
+            #currency-amount-grid {
+                grid-template-columns: minmax(0, 2fr) minmax(4.75rem, 0.9fr);
+                gap: 0.5rem;
+            }
+
+            #amount-field label,
+            #currency-field label {
+                display: block;
+                white-space: nowrap;
+            }
+
+            #currency-field,
+            #amount-field {
+                grid-column: auto;
+                min-width: 0;
+            }
+
+            #currency-select,
+            #amount-input {
+                padding-top: 0.65rem;
+                padding-bottom: 0.65rem;
+            }
+
+            #currency-select {
+                width: 100%;
+                min-width: 0;
+                overflow: hidden;
+                padding-left: 0.45rem;
+                padding-right: 1.5rem;
+                font-size: 0.75rem;
+                text-overflow: ellipsis;
+                white-space: nowrap;
+            }
+
+            #amount-input {
+                padding-left: 2.5rem;
+                font-size: 1.45rem;
+                line-height: 1.75rem;
+            }
+
+            #currency-symbol-prefix {
+                padding-left: 0.8rem;
+                font-size: 1rem;
+            }
+
+            #mid-market-strip {
+                display: grid;
+                grid-template-columns: auto 1fr auto;
+                align-items: center;
+                column-gap: 0.4rem;
+                margin-top: 0.55rem;
+                min-height: 2rem;
+                padding: 0.4rem 0.65rem;
+                border-radius: 0.75rem;
+                line-height: 1rem;
+            }
+
+            #mid-market-strip > div {
+                display: contents;
+            }
+
+            #mid-market-strip > div > span:first-child {
+                font-size: 0.65rem;
+            }
+
+            #mobile-status-text {
+                justify-self: end;
+                font-size: 0.55rem;
+                white-space: nowrap;
+            }
+
+            #first-mid-market-rate {
+                margin-top: 0;
+                font-size: 0.7rem;
+                line-height: 1rem;
+                white-space: nowrap;
+            }
+
+            #network-spread-details {
+                padding-top: 0.65rem;
+            }
+
+            #result-content > :not([hidden]) ~ :not([hidden]) {
+                margin-top: 0.75rem;
+            }
+
+            #final-inr-amount {
+                font-size: 1.85rem;
+                line-height: 2.15rem;
+            }
+
+            #rate-breakdown-details {
+                padding-top: 0.65rem;
+            }
+
+            #rate-breakdown-details .rate-breakdown-rows {
+                gap: 0.45rem;
+                padding-top: 0.6rem;
+            }
+
+            footer {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-100 min-h-screen flex flex-col antialiased selection:bg-indigo-500 selection:text-white">
+    <div id="startup-state" class="min-h-screen flex items-center justify-center px-6">
+        <div class="max-w-sm text-center">
+            <p id="startup-message" class="text-sm font-medium text-slate-600 dark:text-slate-300">Loading exchange rates…</p>
+            <button id="startup-retry" type="button" class="hidden mt-4 rounded-xl bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700">Try again</button>
+        </div>
+    </div>
+
+    <!-- Top Navigation Bar -->
+    <header id="app-header" hidden class="sticky top-0 z-30 backdrop-blur-md bg-white/85 dark:bg-slate-900/85 border-b border-slate-200/80 dark:border-slate-800">
+        <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-indigo-600 to-emerald-500 flex items-center justify-center text-white shadow-sm">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v12m-3-2.818l.879.659c1.171.879 3.07.879 4.242 0 1.172-.879 1.172-2.303 0-3.182C13.536 12.219 12.768 12 12 12c-.725 0-1.45-.22-2.003-.659-1.106-.879-1.106-2.303 0-3.182s2.9-.879 4.006 0l.415.33M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                </div>
+            </div>
+
+            <div class="flex items-center gap-2 sm:gap-3">
+                <!-- Live Status Badge -->
+                <div id="api-status-badge" class="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-200/70 dark:border-emerald-800/60">
+                    <span class="relative flex h-2 w-2">
+                        <span id="status-ping" class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                        <span id="status-dot" class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                    </span>
+                    <span id="status-text">Fetching live rates...</span>
+                </div>
+
+                <!-- Card Selector -->
+                <div role="group" aria-label="Choose card" class="inline-flex items-center rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-800 p-1">
+                    <button type="button" data-card="scapia" aria-pressed="true" aria-label="Select Scapia card" class="card-option rounded-lg px-2.5 py-1.5 text-xs font-extrabold tracking-tight text-white bg-indigo-600 shadow-sm transition">
+                        scapia
+                    </button>
+                    <button type="button" data-card="uni_goldx" aria-pressed="false" aria-label="Select Uni GoldX card" class="card-option rounded-lg px-2.5 py-1.5 text-xs font-black tracking-wide text-slate-600 dark:text-slate-300 transition">
+                        uni
+                    </button>
+                </div>
+
+                <!-- Refresh Button -->
+                <button id="refresh-btn" title="Refresh Live Rates" class="p-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300 transition active:scale-95">
+                    <svg id="refresh-icon" class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                    </svg>
+                </button>
+
+                <!-- Theme Toggle -->
+                <button id="theme-toggle" title="Toggle Light/Dark Mode" class="p-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300 transition active:scale-95">
+                    <!-- Sun Icon (shown in dark mode) -->
+                    <svg id="sun-icon" class="w-4 h-4 hidden dark:block text-amber-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
+                    </svg>
+                    <!-- Moon Icon (shown in light mode) -->
+                    <svg id="moon-icon" class="w-4 h-4 block dark:hidden text-slate-700" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+                    </svg>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <main id="converter-layout" hidden class="flex-grow max-w-6xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 space-y-6">
+
+        <!-- Toast / Notification Banner (Replaces alert()) -->
+        <div id="toast-banner" class="hidden rounded-xl p-3.5 text-sm font-medium flex items-center justify-between bg-amber-50 dark:bg-amber-950/60 text-amber-800 dark:text-amber-200 border border-amber-200 dark:border-amber-800/60">
+            <div class="flex items-center gap-2.5">
+                <svg class="w-5 h-5 shrink-0 text-amber-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <span id="toast-message">Notice message</span>
+            </div>
+            <button onclick="document.getElementById('toast-banner').classList.add('hidden')" class="text-xs underline ml-4 opacity-80 hover:opacity-100">Dismiss</button>
+        </div>
+
+        <!-- Step 1: Main Converter & Breakdown Grid -->
+        <div id="converter-grid" class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+            <!-- Left Panel: Currency Input & Settings (7 Columns) -->
+            <div id="input-panel" class="lg:col-span-7 bg-white dark:bg-slate-900 rounded-3xl p-5 sm:p-7 border border-slate-200/90 dark:border-slate-800 shadow-sm space-y-6">
+                <!-- Amount & Currency Input Box -->
+                <div class="space-y-4">
+                    <div id="currency-amount-grid" class="grid grid-cols-1 sm:grid-cols-12 gap-3">
+                        <!-- Primary control: amount changes most often -->
+                        <div id="amount-field" class="sm:col-span-8">
+                            <label for="amount-input" class="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1.5">Spend amount (<span id="currency-code-label">USD</span>)</label>
+                            <div class="relative">
+                                <span id="currency-symbol-prefix" class="absolute inset-y-0 left-0 pl-4 flex items-center text-slate-400 font-bold text-lg">$</span>
+                                <input type="number" id="amount-input" value="100" min="0" step="any" placeholder="0.00" class="w-full rounded-2xl border border-indigo-300 dark:border-indigo-700 bg-white dark:bg-slate-800 pl-12 pr-12 py-4 text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 transition">
+                                <button id="amount-expand-toggle" type="button" aria-expanded="false" aria-controls="amount-value-dialog" aria-label="Show entered amount" title="Show entered amount" class="absolute inset-y-0 right-2 my-auto flex h-8 w-8 items-center justify-center rounded-lg text-slate-500 hover:bg-slate-100 hover:text-indigo-600 dark:text-slate-400 dark:hover:bg-slate-700 dark:hover:text-indigo-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500">
+                                    <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M8 3H5a2 2 0 00-2 2v3m13-5h3a2 2 0 012 2v3M3 16v3a2 2 0 002 2h3m13-5v3a2 2 0 01-2 2h-3M8 8l-5-5m13 5l5-5M8 16l-5 5m13-5l5 5" />
+                                    </svg>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Secondary control: currency is changed less often -->
+                        <div id="currency-field" class="sm:col-span-4 relative">
+                            <label for="currency-select" class="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1.5">Currency</label>
+                            <div class="relative">
+                                <select id="currency-select" class="w-full appearance-none rounded-2xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/80 px-3 py-3.5 pr-9 text-sm font-bold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 transition cursor-pointer">
+                                    <!-- Populated via JS -->
+                                </select>
+                                <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-slate-500">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
+                                    </svg>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Live mid-market rate in the main input section -->
+                    <div id="mid-market-strip" class="rounded-2xl border border-indigo-100 dark:border-indigo-900/70 bg-indigo-50/60 dark:bg-indigo-950/30 px-4 py-3">
+                        <div class="flex items-center justify-between gap-3">
+                            <span class="text-xs font-semibold text-slate-600 dark:text-slate-300">Mid-market</span>
+                            <span id="mobile-status-text" class="text-[10px] font-semibold text-slate-500 dark:text-slate-400">Fetching rates...</span>
+                        </div>
+                        <div id="first-mid-market-rate" class="mt-1 font-mono text-sm font-bold text-indigo-700 dark:text-indigo-300">1 USD = ₹0.0000</div>
+                    </div>
+
+                </div>
+
+                <dialog id="amount-value-dialog" aria-labelledby="amount-dialog-title" class="w-[calc(100%-2rem)] max-w-sm rounded-3xl border border-slate-200 bg-white p-0 shadow-2xl backdrop:bg-slate-950/60 dark:border-slate-700 dark:bg-slate-900">
+                    <div id="amount-value-dialog-content">
+                        <div class="flex items-start justify-between gap-4">
+                            <div class="min-w-0">
+                                <h2 id="amount-dialog-title" class="font-semibold text-slate-500 dark:text-slate-400">Entered amount</h2>
+                                <p id="amount-value-dialog-text" class="mt-3 break-all font-mono font-extrabold tracking-tight text-slate-900 dark:text-white" aria-live="polite">$100 USD</p>
+                            </div>
+                            <button id="amount-dialog-close" type="button" aria-label="Close amount dialog" class="rounded-xl p-2 text-slate-500 hover:bg-slate-100 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500">
+                                <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                </dialog>
+
+                <!-- Advanced Network Spread Accordion (closed by default) -->
+                <details id="network-spread-details" class="pt-4 border-t border-slate-100 dark:border-slate-800 group">
+                    <summary class="flex cursor-pointer list-none items-center justify-between gap-3 rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500">
+                        <span class="flex flex-wrap items-center gap-1.5">
+                            <span class="text-sm font-semibold text-slate-800 dark:text-slate-200">Estimated Network Spread</span>
+                            <span class="px-2 py-0.5 text-[10px] font-bold rounded bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400">Visa / MC Wholesale</span>
+                        </span>
+                        <svg class="w-4 h-4 shrink-0 text-slate-500 transition-transform group-open:rotate-180" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
+                        </svg>
+                    </summary>
+                    <div class="pt-3">
+                        <div class="flex items-center justify-between gap-3">
+                            <p class="text-xs text-slate-500 dark:text-slate-400">Even with 0% bank markup, Visa &amp; Mastercard apply a minor ~0.25%–0.65% settlement spread over mid-market rates.</p>
+                            <label class="inline-flex items-center cursor-pointer shrink-0">
+                                <input type="checkbox" id="custom-spread-toggle" class="sr-only peer">
+                                <div class="relative w-10 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-indigo-600"></div>
+                                <span class="ms-2 text-xs font-semibold text-slate-600 dark:text-slate-300">Custom %</span>
+                            </label>
+                        </div>
+
+                        <!-- Custom Spread Slider/Input (Hidden unless toggled) -->
+                        <div id="custom-spread-panel" class="hidden mt-3 p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/70 dark:border-slate-700/70 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                            <div class="flex-1">
+                                <div class="flex justify-between text-xs font-semibold mb-1">
+                                    <span>Custom Network Spread %</span>
+                                    <span id="custom-spread-display" class="text-indigo-600 dark:text-indigo-400">0.45%</span>
+                                </div>
+                                <input type="range" id="custom-spread-slider" min="0" max="1.5" step="0.05" value="0.45" class="w-full h-1.5 bg-slate-300 rounded-lg appearance-none cursor-pointer dark:bg-slate-700 accent-indigo-600">
+                            </div>
+                            <button type="button" id="reset-spread-btn" class="text-xs font-semibold text-indigo-600 dark:text-indigo-400 hover:underline shrink-0">Reset to Auto</button>
+                        </div>
+                    </div>
+                </details>
+            </div>
+
+            <!-- Right Panel: Live INR Breakdown Card (5 Columns) -->
+            <div id="results-panel" class="lg:col-span-5 bg-gradient-to-br from-slate-900 via-slate-900 to-indigo-950 text-white rounded-3xl p-5 sm:p-7 shadow-lg flex flex-col justify-between relative overflow-hidden">
+                <!-- Decorative Glow -->
+                <div class="absolute -top-20 -right-20 w-48 h-48 rounded-full bg-indigo-500/20 blur-3xl pointer-events-none"></div>
+                <div class="absolute -bottom-20 -left-20 w-48 h-48 rounded-full bg-emerald-500/15 blur-3xl pointer-events-none"></div>
+
+                <div id="result-content" class="relative z-10 space-y-5">
+                    <div class="flex items-center justify-between">
+                        <span id="result-card-title" class="text-xs font-bold uppercase tracking-wider text-indigo-300">Scapia Federal Card (Visa)</span>
+                        <button id="copy-result-btn" class="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-white/10 hover:bg-white/20 text-xs font-medium text-slate-200 transition">
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                            </svg>
+                            <span id="copy-btn-text">Copy</span>
+                        </button>
+                    </div>
+
+                    <!-- Primary Final Billed Amount -->
+                    <div>
+                        <p class="text-xs text-slate-400 font-medium">Estimated Final Billed Amount</p>
+                        <div class="text-3xl sm:text-4xl font-extrabold tracking-tight mt-1 text-white" id="final-inr-amount">₹0.00</div>
+                    </div>
+
+                    <!-- Detailed Rate Breakdown Accordion (closed by default) -->
+                    <details id="rate-breakdown-details" class="border-t border-white/10 pt-3 group">
+                        <summary class="flex cursor-pointer list-none items-center justify-between gap-3 text-xs font-semibold text-slate-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400 rounded-lg">
+                            <span>Detailed Rate Breakdown</span>
+                            <svg class="w-4 h-4 shrink-0 text-slate-400 transition-transform group-open:rotate-180" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
+                            </svg>
+                        </summary>
+                        <div class="rate-breakdown-rows space-y-2.5 pt-3 text-xs sm:text-sm">
+                            <div class="flex justify-between items-center">
+                                <span class="text-slate-400">Mid-Market Live Rate</span>
+                                <span class="font-semibold font-mono text-slate-200" id="mid-market-rate">1 USD = ₹0.0000</span>
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <span class="text-slate-400">Network Spread (<span id="spread-pct-label">0.45%</span>)</span>
+                                <span class="font-semibold font-mono text-amber-300" id="spread-diff-inr">+₹0.00</span>
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <span class="text-slate-400">Effective Card Rate</span>
+                                <span class="font-bold font-mono text-indigo-300" id="effective-card-rate">1 USD = ₹0.0000</span>
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <span class="text-slate-400">Bank Forex Markup</span>
+                                <span class="font-semibold text-emerald-400">₹0.00 (0.00%)</span>
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <span class="text-slate-400">GST on Forex Markup (18%)</span>
+                                <span class="font-semibold text-emerald-400">₹0.00</span>
+                            </div>
+                        </div>
+                    </details>
+                </div>
+
+                <!-- Rate source and timestamp -->
+                <div class="relative z-10 mt-5 pt-3 border-t border-white/10 flex items-center justify-between gap-3 text-[11px] text-slate-400">
+                    <span class="inline-flex items-center gap-1.5">
+                        <span id="rate-source-dot" class="inline-block h-2 w-2 rounded-full bg-slate-400" aria-hidden="true"></span>
+                        <span id="rate-source-label">Rates pending</span>
+                    </span>
+                    <span id="rate-timestamp" class="font-mono">Updating...</span>
+                </div>
+            </div>
+        </div>
+
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="border-t border-slate-200/80 dark:border-slate-800 py-5 px-4 text-center text-xs text-slate-500 dark:text-slate-400">
+        <p>Live mid-market rates powered by Open Exchange Rates API. Network spreads are realistic estimates; actual billed INR depends on Visa/Mastercard settlement batch timing.</p>
+    </footer>
+
+    <!-- Application Logic -->
+    <script>
+        /**
+         * Configuration & Reference Data
+         */
+        // Network settlement spreads are estimates; the rate API does not publish these values.
+        // Unlisted currencies use the default Visa/Mastercard estimates below.
+        const NETWORK_SPREADS = {
+            USD: { visa: 0.40, mastercard: 0.28 },
+            EUR: { visa: 0.45, mastercard: 0.30 },
+            GBP: { visa: 0.45, mastercard: 0.30 },
+            AED: { visa: 0.42, mastercard: 0.30 },
+            SGD: { visa: 0.45, mastercard: 0.32 },
+            THB: { visa: 0.55, mastercard: 0.38 },
+            VND: { visa: 0.65, mastercard: 0.45 },
+            JPY: { visa: 0.48, mastercard: 0.32 },
+            MYR: { visa: 0.55, mastercard: 0.38 },
+            AUD: { visa: 0.48, mastercard: 0.33 },
+            CHF: { visa: 0.45, mastercard: 0.30 },
+            KRW: { visa: 0.55, mastercard: 0.38 }
+        };
+        const DEFAULT_NETWORK_SPREADS = { visa: 0.45, mastercard: 0.30 };
+        const NON_CURRENCY_CODES = new Set(['INR', 'XAU', 'XAG', 'XDR', 'XXX']);
+
+        function createCurrency(code) {
+            let name = code;
+            let symbol = code;
+
+            try {
+                name = new Intl.DisplayNames(['en'], { type: 'currency' }).of(code) || code;
+            } catch (err) {
+                // Keep the ISO code as a readable fallback if this runtime lacks currency names.
+            }
+
+            try {
+                symbol = new Intl.NumberFormat('en', {
+                    style: 'currency',
+                    currency: code,
+                    currencyDisplay: 'symbol'
+                }).formatToParts(0).find(part => part.type === 'currency')?.value || code;
+            } catch (err) {
+                // Some rate sources include codes unsupported by this runtime's currency formatter.
+            }
+
+            const spreads = NETWORK_SPREADS[code] || DEFAULT_NETWORK_SPREADS;
+            return {
+                code,
+                name,
+                symbol,
+                visaSpread: spreads.visa,
+                mcSpread: spreads.mastercard
+            };
+        }
+
+        const CARDS = {
+            scapia: {
+                name: 'Scapia Federal Bank Issued Card',
+                network: 'Visa'
+            },
+            uni_goldx: {
+                name: 'Uni GoldX YES Bank Issued Card',
+                network: 'Mastercard / Visa'
+            }
+        };
+
+        const PREFERENCES_STORAGE_KEY = 'currency-converter.preferences.v1';
+        const RATES_STORAGE_KEY = 'currency-converter.rates.v1';
+
+        function readStoredPreferences() {
+            try {
+                const saved = JSON.parse(localStorage.getItem(PREFERENCES_STORAGE_KEY) || '{}');
+                return {
+                    selectedCurrency: typeof saved.selectedCurrency === 'string' && /^[A-Z]{3}$/.test(saved.selectedCurrency)
+                        ? saved.selectedCurrency
+                        : 'USD',
+                    amount: (typeof saved.amount === 'string' || typeof saved.amount === 'number')
+                        && (saved.amount === '' || (Number.isFinite(Number(saved.amount)) && Number(saved.amount) >= 0))
+                        ? String(saved.amount)
+                        : '100'
+                };
+            } catch (err) {
+                return { selectedCurrency: 'USD', amount: '100' };
+            }
+        }
+
+        function validateRates(rates) {
+            if (!rates || typeof rates !== 'object') return null;
+            const validRates = Object.fromEntries(
+                Object.entries(rates).filter(([code, rate]) =>
+                    /^[A-Z]{3}$/.test(code) && Number.isFinite(rate) && rate > 0
+                )
+            );
+            return validRates.INR && validRates.USD ? validRates : null;
+        }
+
+        function readCachedRates() {
+            let cached;
+            try {
+                cached = JSON.parse(localStorage.getItem(RATES_STORAGE_KEY) || 'null');
+            } catch (err) {
+                return null;
+            }
+
+            if (!cached || typeof cached !== 'object') return null;
+            // Accept the previous version's raw rates map as well as the timestamped format.
+            const rates = validateRates(cached.rates || cached);
+            if (!rates) return null;
+
+            return {
+                rates,
+                updatedAt: Number.isFinite(cached.updatedAt) ? cached.updatedAt : null
+            };
+        }
+
+        function savePreferences() {
+            try {
+                localStorage.setItem(PREFERENCES_STORAGE_KEY, JSON.stringify({
+                    selectedCurrency: state.selectedCurrency,
+                    amount: state.amount
+                }));
+            } catch (err) {
+                // Storage may be unavailable or full; the converter remains usable for this session.
+            }
+        }
+
+        /**
+         * Application State
+         */
+        const storedPreferences = readStoredPreferences();
+        let state = {
+            selectedCard: 'scapia',
+            selectedCurrency: storedPreferences.selectedCurrency,
+            amount: storedPreferences.amount,
+            usdRates: {},
+            currencies: [],
+            lastUpdated: null,
+            useCustomSpread: false,
+            customSpreadPct: 0.45
+        };
+
+        /**
+         * DOM Elements
+         */
+        const els = {
+            currencySelect: document.getElementById('currency-select'),
+            amountInput: document.getElementById('amount-input'),
+            amountExpandToggle: document.getElementById('amount-expand-toggle'),
+            amountValueDialog: document.getElementById('amount-value-dialog'),
+            amountValueDialogText: document.getElementById('amount-value-dialog-text'),
+            amountDialogClose: document.getElementById('amount-dialog-close'),
+            currencyCodeLabel: document.getElementById('currency-code-label'),
+            currencySymbolPrefix: document.getElementById('currency-symbol-prefix'),
+            firstMidMarketRate: document.getElementById('first-mid-market-rate'),
+            resultCardTitle: document.getElementById('result-card-title'),
+            finalInrAmount: document.getElementById('final-inr-amount'),
+            midMarketRate: document.getElementById('mid-market-rate'),
+            spreadPctLabel: document.getElementById('spread-pct-label'),
+            spreadDiffInr: document.getElementById('spread-diff-inr'),
+            effectiveCardRate: document.getElementById('effective-card-rate'),
+            rateTimestamp: document.getElementById('rate-timestamp'),
+            rateSourceLabel: document.getElementById('rate-source-label'),
+            rateSourceDot: document.getElementById('rate-source-dot'),
+            customSpreadToggle: document.getElementById('custom-spread-toggle'),
+            customSpreadPanel: document.getElementById('custom-spread-panel'),
+            customSpreadSlider: document.getElementById('custom-spread-slider'),
+            customSpreadDisplay: document.getElementById('custom-spread-display'),
+            resetSpreadBtn: document.getElementById('reset-spread-btn'),
+            statusText: document.getElementById('status-text'),
+            mobileStatusText: document.getElementById('mobile-status-text'),
+            statusDot: document.getElementById('status-dot'),
+            statusPing: document.getElementById('status-ping'),
+            refreshBtn: document.getElementById('refresh-btn'),
+            refreshIcon: document.getElementById('refresh-icon'),
+            startupState: document.getElementById('startup-state'),
+            startupMessage: document.getElementById('startup-message'),
+            startupRetry: document.getElementById('startup-retry'),
+            appHeader: document.getElementById('app-header'),
+            converterLayout: document.getElementById('converter-layout'),
+            copyResultBtn: document.getElementById('copy-result-btn'),
+            copyBtnText: document.getElementById('copy-btn-text'),
+            toastBanner: document.getElementById('toast-banner'),
+            toastMessage: document.getElementById('toast-message')
+        };
+
+        /**
+         * Initialize Dropdown Options
+         */
+        function populateCurrencies() {
+            if (!state.currencies.length) throw new Error('No currencies are available from the exchange-rate data.');
+            const previousSelection = state.selectedCurrency;
+            els.currencySelect.innerHTML = state.currencies.map(currency =>
+                `<option value="${currency.code}">${currency.code} — ${currency.name}</option>`
+            ).join('');
+
+            state.selectedCurrency = state.currencies.some(currency => currency.code === previousSelection)
+                ? previousSelection
+                : (state.currencies.some(currency => currency.code === 'USD') ? 'USD' : state.currencies[0].code);
+            els.currencySelect.value = state.selectedCurrency;
+            if (els.amountInput) els.amountInput.value = state.amount;
+            savePreferences();
+        }
+
+        function showStartupError(message) {
+            els.startupMessage.textContent = message;
+            els.startupState.hidden = false;
+            els.appHeader.hidden = true;
+            els.converterLayout.hidden = true;
+            els.startupRetry.classList.remove('hidden');
+            els.startupRetry.onclick = () => initializeApp(true).catch(err => console.error(err));
+        }
+
+        function showApplication() {
+            els.startupState.hidden = true;
+            els.appHeader.hidden = false;
+            els.converterLayout.hidden = false;
+        }
+
+        async function requestLiveRates() {
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 10000);
+            try {
+                const response = await fetch('https://open.er-api.com/v6/latest/USD', { signal: controller.signal });
+                if (!response.ok) throw new Error('Exchange-rate API request failed.');
+                const data = await response.json();
+                const rates = validateRates(data?.rates);
+                if (!rates) throw new Error('Exchange-rate API returned invalid rate data.');
+                return { rates, updatedAt: Date.now() };
+            } catch (err) {
+                if (err.name === 'AbortError') {
+                    throw new Error('Exchange-rate API timed out after 10 seconds.', { cause: err });
+                }
+                throw err;
+            } finally {
+                clearTimeout(timeoutId);
+            }
+        }
+
+        function applyRateData(rateData, isLive) {
+            const rates = validateRates(rateData?.rates);
+            if (!rates) throw new Error('No valid exchange-rate data is available.');
+            state.usdRates = rates;
+            state.currencies = Object.keys(rates)
+                .filter(code => !NON_CURRENCY_CODES.has(code))
+                .sort()
+                .map(createCurrency);
+            state.lastUpdated = rateData.updatedAt ? new Date(rateData.updatedAt) : new Date();
+            populateCurrencies();
+            updateStatusUI(isLive);
+        }
+
+        async function fetchLiveRates() {
+            els.refreshIcon.classList.add('animate-spin');
+            els.statusText.textContent = 'Updating live rates...';
+            els.mobileStatusText.textContent = 'Updating...';
+
+            try {
+                const rateData = await requestLiveRates();
+                try {
+                    localStorage.setItem(RATES_STORAGE_KEY, JSON.stringify(rateData));
+                } catch (err) {
+                    // The live rates still work for this session if caching is unavailable.
+                }
+                applyRateData(rateData, true);
+                calculateAndRender();
+            } catch (err) {
+                console.warn('Live rate refresh failed:', err);
+                const cachedRates = readCachedRates();
+                if (cachedRates) {
+                    applyRateData(cachedRates, false);
+                    calculateAndRender();
+                    showApplication();
+                    showToast('Could not reach live rates. Showing your last saved rates.');
+                } else if (validateRates(state.usdRates)) {
+                    updateStatusUI(false);
+                    calculateAndRender();
+                    showToast('Could not refresh live rates. Keeping the rates already loaded.');
+                } else {
+                    throw new Error('Live exchange rates are unavailable and no valid saved rates were found.', { cause: err });
+                }
+            } finally {
+                els.refreshIcon.classList.remove('animate-spin');
+            }
+        }
+
+        function updateStatusUI(isLive) {
+            if (isLive) {
+                els.statusText.textContent = 'Live Mid-Market Rates';
+                els.mobileStatusText.textContent = '● Live Rates Active';
+                els.statusDot.className = 'relative inline-flex rounded-full h-2 w-2 bg-emerald-500';
+                els.statusPing.classList.remove('hidden');
+                els.rateSourceLabel.textContent = 'Live rates';
+                els.rateSourceDot.className = 'inline-block h-2 w-2 rounded-full bg-emerald-400';
+            } else {
+                els.statusText.textContent = 'Cached Reference Rates';
+                els.mobileStatusText.textContent = '● Cached Rates';
+                els.statusDot.className = 'relative inline-flex rounded-full h-2 w-2 bg-amber-500';
+                els.statusPing.classList.add('hidden');
+                els.rateSourceLabel.textContent = 'Cached rates';
+                els.rateSourceDot.className = 'inline-block h-2 w-2 rounded-full bg-amber-400';
+            }
+        }
+
+        function showToast(msg) {
+            els.toastMessage.textContent = msg;
+            els.toastBanner.classList.remove('hidden');
+        }
+
+        /**
+         * Formatting Helpers
+         */
+        function formatINR(value) {
+            return new Intl.NumberFormat('en-IN', {
+                style: 'currency',
+                currency: 'INR',
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
+            }).format(value);
+        }
+
+        function formatRate(rate, currencyCode) {
+            // For low-unit currencies like VND, JPY, KRW, show rate per 100 or 4-5 decimals
+            if (rate < 0.5) {
+                return `1 ${currencyCode} = ₹${rate.toFixed(5)}`;
+            }
+            return `1 ${currencyCode} = ₹${rate.toFixed(4)}`;
+        }
+
+        /**
+         * Core Calculation Engine
+         */
+        function getMidMarketInrRate(currencyCode) {
+            const usdToInr = state.usdRates.INR;
+            if (!Number.isFinite(usdToInr) || usdToInr <= 0) {
+                throw new Error('No valid exchange rates are loaded.');
+            }
+            if (currencyCode === 'USD') return usdToInr;
+            const usdToForeign = state.usdRates[currencyCode];
+            if (!Number.isFinite(usdToForeign) || usdToForeign <= 0) {
+                throw new Error(`No exchange rate is available for ${currencyCode}.`);
+            }
+            return usdToInr / usdToForeign;
+        }
+
+        function getCurrency(currencyCode) {
+            return state.currencies.find(currency => currency.code === currencyCode)
+                || createCurrency(currencyCode);
+        }
+
+        function getNetworkSpreadPct(cardId, currencyObj) {
+            if (state.useCustomSpread) {
+                return state.customSpreadPct;
+            }
+            if (cardId === 'uni_goldx') {
+                return currencyObj.mcSpread;
+            }
+            // Scapia Federal Bank Issued Card runs on Visa
+            return currencyObj.visaSpread;
+        }
+
+        function calculateCardMetrics(cardId, amount, currencyObj, midRate) {
+            const spreadPct = getNetworkSpreadPct(cardId, currencyObj);
+            const effectiveRate = midRate * (1 + spreadPct / 100);
+            const finalInr = amount * effectiveRate;
+            const spreadCostInr = amount * midRate * spreadPct / 100;
+
+            return {
+                spreadPct,
+                effectiveRate,
+                finalInr,
+                spreadCostInr
+            };
+        }
+
+        /**
+         * Render Everything
+         */
+        function calculateAndRender() {
+            const currencyObj = getCurrency(state.selectedCurrency);
+            const amount = Math.max(0, parseFloat(state.amount) || 0);
+            const midRate = getMidMarketInrRate(currencyObj.code);
+
+            // Update currency labels
+            els.currencyCodeLabel.textContent = currencyObj.code;
+            els.currencySymbolPrefix.textContent = currencyObj.symbol;
+            els.firstMidMarketRate.textContent = formatRate(midRate, currencyObj.code);
+            const enteredAmount = state.amount === '' ? '—' : `${currencyObj.symbol} ${state.amount}`;
+            els.amountValueDialogText.textContent = enteredAmount;
+
+            const activeCardId = state.selectedCard;
+            const activeCard = CARDS[activeCardId] || CARDS.scapia;
+
+            const metrics = calculateCardMetrics(activeCardId, amount, currencyObj, midRate);
+
+            els.resultCardTitle.textContent = activeCard.name;
+
+            // Update Breakdown Panel
+            els.finalInrAmount.textContent = formatINR(metrics.finalInr);
+            els.midMarketRate.textContent = formatRate(midRate, currencyObj.code);
+            els.spreadPctLabel.textContent = `${metrics.spreadPct.toFixed(2)}%`;
+            els.spreadDiffInr.textContent = `+${formatINR(metrics.spreadCostInr)}`;
+            els.effectiveCardRate.textContent = formatRate(metrics.effectiveRate, currencyObj.code);
+
+            if (state.lastUpdated) {
+                els.rateTimestamp.textContent = state.lastUpdated.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+            }
+
+        }
+
+        /**
+         * Event Listeners
+         */
+        // Header card toggle
+        document.querySelectorAll('.card-option').forEach(btn => {
+            btn.addEventListener('click', () => {
+                state.selectedCard = btn.dataset.card;
+
+                document.querySelectorAll('.card-option').forEach(option => {
+                    const isSelected = option.dataset.card === state.selectedCard;
+                    option.setAttribute('aria-pressed', String(isSelected));
+                    option.classList.toggle('bg-indigo-600', isSelected);
+                    option.classList.toggle('text-white', isSelected);
+                    option.classList.toggle('shadow-sm', isSelected);
+                    option.classList.toggle('text-slate-600', !isSelected);
+                    option.classList.toggle('dark:text-slate-300', !isSelected);
+                });
+
+                calculateAndRender();
+            });
+        });
+
+        // Currency Dropdown
+        els.currencySelect.addEventListener('change', (e) => {
+            state.selectedCurrency = e.target.value;
+            savePreferences();
+            calculateAndRender();
+        });
+
+        // Amount Input
+        els.amountInput.addEventListener('input', (e) => {
+            state.amount = e.target.value;
+            savePreferences();
+            calculateAndRender();
+        });
+
+        // Show the current entered amount in a modal overlay.
+        els.amountExpandToggle.addEventListener('click', () => {
+            els.amountExpandToggle.setAttribute('aria-expanded', 'true');
+            els.amountValueDialog.showModal();
+        });
+
+        function closeAmountDialog() {
+            if (els.amountValueDialog.open) els.amountValueDialog.close();
+            els.amountExpandToggle.setAttribute('aria-expanded', 'false');
+            els.amountExpandToggle.focus();
+        }
+
+        els.amountDialogClose.addEventListener('click', closeAmountDialog);
+        els.amountValueDialog.addEventListener('click', (event) => {
+            if (event.target === els.amountValueDialog) closeAmountDialog();
+        });
+        els.amountValueDialog.addEventListener('close', () => {
+            els.amountExpandToggle.setAttribute('aria-expanded', 'false');
+        });
+
+        // Custom Spread Toggle & Slider
+        els.customSpreadToggle.addEventListener('change', (e) => {
+            state.useCustomSpread = e.target.checked;
+            if (state.useCustomSpread) {
+                els.customSpreadPanel.classList.remove('hidden');
+            } else {
+                els.customSpreadPanel.classList.add('hidden');
+            }
+            calculateAndRender();
+        });
+
+        els.customSpreadSlider.addEventListener('input', (e) => {
+            state.customSpreadPct = parseFloat(e.target.value);
+            els.customSpreadDisplay.textContent = `${state.customSpreadPct.toFixed(2)}%`;
+            calculateAndRender();
+        });
+
+        els.resetSpreadBtn.addEventListener('click', () => {
+            state.useCustomSpread = false;
+            els.customSpreadToggle.checked = false;
+            els.customSpreadPanel.classList.add('hidden');
+            calculateAndRender();
+        });
+
+        // Manual Refresh
+        els.refreshBtn.addEventListener('click', () => {
+            fetchLiveRates().catch(err => showStartupError(err.message));
+        });
+
+        // Copy Result Summary to Clipboard (using execCommand fallback for iframe compatibility)
+        els.copyResultBtn.addEventListener('click', () => {
+            const currencyObj = getCurrency(state.selectedCurrency);
+            const activeCard = CARDS[state.selectedCard] || CARDS.scapia;
+            const summaryText = `${activeCard.name} (${activeCard.network}): ${state.amount} ${currencyObj.code} = ${els.finalInrAmount.textContent} (${els.effectiveCardRate.textContent}, 0% Forex Markup)`;
+
+            const tempInput = document.createElement('textarea');
+            tempInput.value = summaryText;
+            document.body.appendChild(tempInput);
+            tempInput.select();
+            try {
+                document.execCommand('copy');
+                els.copyBtnText.textContent = 'Copied!';
+                setTimeout(() => {
+                    els.copyBtnText.textContent = 'Copy';
+                }, 2000);
+            } catch (err) {
+                showToast('Unable to copy summary automatically.');
+            }
+            document.body.removeChild(tempInput);
+        });
+
+        // Dark / Light Theme Toggle
+        const themeToggleBtn = document.getElementById('theme-toggle');
+        if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+            document.documentElement.classList.add('dark');
+        }
+        themeToggleBtn.addEventListener('click', () => {
+            document.documentElement.classList.toggle('dark');
+        });
+
+        // Initialize immediately when the DOM is ready, or wait for parsing to finish.
+        // The readyState check also covers pages where this script is injected after DOMContentLoaded.
+        let appInitialized = false;
+        async function initializeApp(isRetry = false) {
+            if (appInitialized && !isRetry) return;
+            appInitialized = true;
+            els.startupRetry.classList.add('hidden');
+            els.startupMessage.textContent = 'Loading exchange rates…';
+
+            // Render saved rates immediately so a slow API cannot hold a usable page hostage.
+            const cachedRates = readCachedRates();
+            if (cachedRates) {
+                applyRateData(cachedRates, false);
+                calculateAndRender();
+                showApplication();
+            }
+
+            try {
+                const rateData = await requestLiveRates();
+                try {
+                    localStorage.setItem(RATES_STORAGE_KEY, JSON.stringify(rateData));
+                } catch (err) {
+                    // Live rates remain usable if local storage is blocked or full.
+                }
+                applyRateData(rateData, true);
+                calculateAndRender();
+                showApplication();
+            } catch (err) {
+                if (cachedRates) {
+                    updateStatusUI(false);
+                    showToast('Could not reach live rates. Showing your last saved rates.');
+                    return;
+                }
+
+                const message = `Unable to load the converter: ${err.message}`;
+                showStartupError(message);
+                console.error(message, err);
+            }
+        }
+
+        function startApp() {
+            initializeApp().catch(err => console.error(err));
+        }
+
+        // Register the service worker so the app shell works offline.
+        // Service workers require HTTPS (or localhost), so skip silently elsewhere (e.g. file://).
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('sw.js').catch(err => {
+                    console.warn('Service worker registration failed:', err);
+                });
+            });
+        }
+
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', startApp, { once: true });
+        } else {
+            startApp();
+        }
+    </script>
+</body>
+</html>
