@@ -8,7 +8,7 @@
  *
  * Bump CACHE_VERSION whenever a precached file changes.
  */
-const CACHE_VERSION = 'v1';
+const CACHE_VERSION = 'v2';
 const SHELL_CACHE = `zeroforex-shell-${CACHE_VERSION}`;
 const RUNTIME_CACHE = `zeroforex-runtime-${CACHE_VERSION}`;
 
